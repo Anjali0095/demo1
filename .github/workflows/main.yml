@@ -35,7 +35,7 @@ jobs:
           AWS_EC2_USER: ${{ secrets.AWS_EC2_USER }}
           AWS_EC2_HOSTS: ${{ secrets.AWS_EC2_HOSTS }}
         run: |
-          ssh -i ~/.ssh/deploy_key $AWS_EC2_USER@$AWS_EC2_HOSTS << 'EOF'
+          ssh -i ~/.ssh/demo_key $AWS_EC2_USER@$AWS_EC2_HOSTS << 'EOF'
           # Ensure the deployment directory exists
           mkdir -p /home/ubuntu/demo1 || exit
           
@@ -52,10 +52,4 @@ jobs:
           # Pull the latest code
           git pull origin master || exit
 
-          # Install dependencies and build the project
-          npm install || exit
-          npm run build || exit
-          pm2 delete react
-          pm2 start npm --name "react" -- start
-          pm2 restart react
-          EOF
+       
