@@ -26,8 +26,8 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/demo
-          chmod 600 ~/.ssh/demo
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/demo1
+          chmod 600 ~/.ssh/demo1
           ssh-keyscan -H ${{ secrets.AWS_EC2_HOSTS }} >> ~/.ssh/known_hosts
 
       - name: Deploy to EC2
@@ -50,7 +50,7 @@ jobs:
           git config --global --add safe.directory /home/ubuntu/demo1 || exit
 
           # Pull the latest code
-          git pull origin main || exit
+          git pull origin master || exit
 
           # Install dependencies and build the project
           npm install || exit
