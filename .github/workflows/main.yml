@@ -1,49 +1,61 @@
-name: Deploy to Backend to Prod Environment
+name: Deploy React App to Ubuntu EC2
 
 on:
   push:
     branches:
-      - demo1
+      - master
 
 jobs:
-  deploy_web_app:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    environment: Prod
-    strategy:
-      matrix:
-        max-parallel: [2]
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        
-      - name: Add public IP to AWS security group for Web App
-        uses: sohelamin/aws-security-group-add-ip-action@master
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: 'ap-south-1'
-          aws-security-group-id: 'sg-0dca6a1d53a2bd555'
-          port: '22'
-          to-port: '22'
-          protocol: 'tcp'
-          description: 'GitHub Action'
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - name: Configure SSH for Web App
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.17.0'
+
+      - name: Install SSH client
+        run: sudo apt-get install -y openssh-client
+
+      - name: Add SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          echo "StrictHostKeyChecking no" > ~/.ssh/config
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/demo
+          chmod 600 ~/.ssh/demo
+          ssh-keyscan -H ${{ secrets.AWS_EC2_HOSTS }} >> ~/.ssh/known_hosts
 
-      - name: Deploy code to Web App
-        run: 
-          ssh ubuntu@${{ secrets.SSH_HOST }} "cd /home/ubuntu/demo1 && git stash && git pull && npm install && npm rum build 
-
-      - name: Deployment complete
+      - name: Deploy to EC2
+        env:
+          AWS_EC2_USER: ${{ secrets.AWS_EC2_USER }}
+          AWS_EC2_HOSTS: ${{ secrets.AWS_EC2_HOSTS }}
         run: |
-           echo "------------------------------------"
-           echo "|                                  |"
-           echo "|       🚀 Deployment Complete      |"
-           echo "|                                  |"
-           echo "------------------------------------"
+          ssh -i ~/.ssh/deploy_key $AWS_EC2_USER@$AWS_EC2_HOSTS << 'EOF'
+          # Ensure the deployment directory exists
+          mkdir -p /home/ubuntu/demo1 || exit
+          
+          # Change to the deployment directory
+          cd /home/ubuntu/demo1 || exit
+
+          # Fix ownership and permissions
+          sudo chown -R $AWS_EC2_USER:$AWS_EC2_USER /home/ubuntu/demo1 || exit
+          sudo chmod -R u+rwX /home/ubuntu/demo1 || exit
+
+          # Configure Git to handle permissions issues
+          git config --global --add safe.directory /home/ubuntu/demo1 || exit
+
+          # Pull the latest code
+          git pull origin main || exit
+
+          # Install dependencies and build the project
+          npm install || exit
+          npm run build || exit
+          pm2 delete react
+          pm2 start npm --name "react" -- start
+          pm2 restart react
+          EOF
