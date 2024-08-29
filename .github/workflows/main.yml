@@ -50,7 +50,7 @@ jobs:
           git config --global --add safe.directory /home/ubuntu/demo1 || exit
 
           # Pull the latest code
-      
+           git stash
            git pull origin master || exit
 
           # Install dependencies and build the project
