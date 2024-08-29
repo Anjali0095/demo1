@@ -50,14 +50,8 @@ jobs:
           git config --global --add safe.directory /home/ubuntu/demo1 || exit
 
           # Pull the latest code
-          git pull origin master || exit
+          git pull origin master && npm install
 
-          # Install dependencies and build the project
-          npm install || exit
-          npm run build || exit
-          pm2 delete react
-          pm2 start npm --name "react" -- start
-          pm2 restart react
-          EOF
+      
 
        
