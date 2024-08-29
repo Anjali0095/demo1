@@ -50,6 +50,6 @@ jobs:
           git config --global --add safe.directory /home/ubuntu/demo1 || exit
 
           # Pull the latest code
-          git pull origin master || exit
+          git pull && npm install
 
        
